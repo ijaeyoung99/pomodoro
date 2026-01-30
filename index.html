@@ -5,45 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Pomodoro Timer</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@200;400;500;600&display=swap');
+
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg: #0f0f0f;
+  --card: rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.08);
+  --text: #f0f0f0;
+  --text-dim: rgba(255,255,255,0.4);
+  --accent: #a78bfa;
+  --accent-glow: rgba(167,139,250,0.25);
+  --prep: #f59e0b;
+  --prep-glow: rgba(245,158,11,0.2);
+  --work: #a78bfa;
+  --work-glow: rgba(167,139,250,0.2);
+  --rest: #34d399;
+  --rest-glow: rgba(52,211,153,0.2);
+}
+
 body {
-  font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', -apple-system, sans-serif;
   display: flex; justify-content: center; align-items: center;
   min-height: 100vh;
-  background: #fafafa; color: #222;
-  transition: background 0.4s;
+  background: var(--bg); color: var(--text);
+  transition: background 0.6s;
 }
-body.prep { background: #fff3cd; }
-body.work { background: #fafafa; }
-body.rest { background: #d4edda; }
+
+body.prep { background: #0f0d08; }
+body.work { background: #0d0b14; }
+body.rest { background: #08100d; }
 
 .container {
   text-align: center;
   width: 90%;
-  max-width: 400px;
-  padding: 2rem;
+  max-width: 420px;
+  padding: 2.5rem 2rem;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
 }
 
 #phase {
-  font-size: 0.85rem;
-  letter-spacing: 0.15em;
+  display: inline-block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: #999;
-  margin-bottom: 0.5rem;
+  color: var(--accent);
+  background: var(--accent-glow);
+  padding: 0.35rem 1rem;
+  border-radius: 100px;
+  margin-bottom: 1.5rem;
+  transition: color 0.4s, background 0.4s;
 }
 
+body.prep #phase { color: var(--prep); background: var(--prep-glow); }
+body.work #phase { color: var(--work); background: var(--work-glow); }
+body.rest #phase { color: var(--rest); background: var(--rest-glow); }
+
 #timer {
-  font-size: clamp(3.5rem, 15vw, 6rem);
+  font-size: clamp(3.5rem, 15vw, 5.5rem);
   font-weight: 200;
-  letter-spacing: 0.05em;
-  margin: 1rem 0;
-  color: #222;
+  letter-spacing: 0.08em;
+  margin: 0.5rem 0;
+  color: var(--text);
+  transition: text-shadow 0.4s;
 }
+
+body.prep #timer { text-shadow: 0 0 40px var(--prep-glow); }
+body.work #timer { text-shadow: 0 0 40px var(--work-glow); }
+body.rest #timer { text-shadow: 0 0 40px var(--rest-glow); }
 
 #set-info {
   font-size: 0.8rem;
-  color: #bbb;
-  margin-bottom: 2rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-bottom: 1.5rem;
 }
 
 .progress {
@@ -53,14 +94,19 @@ body.rest { background: #d4edda; }
 .dot {
   width: 8px; height: 8px;
   border-radius: 50%;
-  background: #e0e0e0;
-  transition: background 0.3s;
+  background: rgba(255,255,255,0.1);
+  transition: all 0.3s;
 }
-.dot.done { background: #222; }
-.dot.active { background: #999; }
+.dot.done { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); }
+.dot.active { background: rgba(255,255,255,0.35); animation: pulse-dot 1.5s ease-in-out infinite; }
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.4); opacity: 1; }
+}
 
 .settings {
-  display: flex; flex-direction: column; gap: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.65rem;
   align-items: center;
   margin-bottom: 2rem;
 }
@@ -68,33 +114,54 @@ body.rest { background: #d4edda; }
   display: flex; justify-content: space-between; align-items: center;
   width: 100%; max-width: 220px;
 }
-.setting-row span { font-size: 0.8rem; color: #999; }
+.setting-row span {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+}
 .setting-row input {
-  width: 60px; padding: 6px;
+  width: 60px; padding: 8px;
   text-align: center;
-  border: 1px solid #ddd; border-radius: 4px;
-  background: #fff; color: #222;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  background: rgba(255,255,255,0.05);
+  color: var(--text);
+  font-family: 'Inter', sans-serif;
   font-size: 0.85rem;
   outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-.setting-row input:focus { border-color: #999; }
+.setting-row input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
 
 .buttons { display: flex; gap: 0.75rem; justify-content: center; }
 button {
-  padding: 0.6rem 2rem;
-  font-size: 0.85rem;
-  letter-spacing: 0.1em;
+  padding: 0.7rem 2.2rem;
+  font-family: 'Inter', sans-serif;
+  font-size: 0.8rem;
+  font-weight: 500;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  border: 1px solid #222;
-  border-radius: 2px;
+  border: none;
+  border-radius: 10px;
   cursor: pointer;
-  background: #222; color: #fff;
-  transition: all 0.2s;
+  background: var(--accent);
+  color: #0f0f0f;
+  transition: all 0.25s;
+  box-shadow: 0 2px 12px var(--accent-glow);
 }
-button:hover { background: #444; border-color: #444; }
-button:disabled { opacity: 0.3; cursor: default; }
-#reset-btn { background: transparent; color: #222; }
-#reset-btn:hover { background: #f0f0f0; }
+button:hover { transform: translateY(-1px); box-shadow: 0 4px 20px var(--accent-glow); }
+button:active { transform: translateY(0); }
+button:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: none; }
+#reset-btn {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: none;
+}
+#reset-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); transform: translateY(-1px); }
 </style>
 </head>
 <body>
@@ -102,7 +169,7 @@ button:disabled { opacity: 0.3; cursor: default; }
 <div id="phase">준비</div>
 <div id="timer">00:05</div>
 <div class="progress" id="progress"></div>
-<div id="set-info">0 / 10</div>
+<div id="set-info">1 / 10</div>
 <div class="settings" id="settings">
   <div class="setting-row"><span>준비 (초)</span><input type="number" id="prep-sec" value="5" min="1"></div>
   <div class="setting-row"><span>공부 (초)</span><input type="number" id="work-sec" value="15" min="1"></div>
@@ -138,7 +205,7 @@ function phaseLabel() {
 function updateDisplay() {
   document.getElementById('timer').textContent = fmt(remaining);
   document.getElementById('phase').textContent = phaseLabel();
-  document.getElementById('set-info').textContent = `${currentSet} / ${totalSets}`;
+  document.getElementById('set-info').textContent = `${currentSet + 1} / ${totalSets}`;
   document.body.className = phase;
   renderDots();
 }
