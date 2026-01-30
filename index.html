@@ -162,12 +162,74 @@ button:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: no
   box-shadow: none;
 }
 #reset-btn:hover { background: rgba(255,255,255,0.06); color: var(--text); transform: translateY(-1px); }
+canvas#particles {
+  position: fixed; top: 0; left: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.container {
+  position: relative;
+  z-index: 1;
+}
+
+.ring-wrapper {
+  position: relative;
+  display: inline-block;
+  margin: 0.5rem 0 0.2rem;
+}
+
+.ring-svg {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: 240px; height: 240px;
+}
+
+.ring-bg {
+  fill: none;
+  stroke: rgba(255,255,255,0.06);
+  stroke-width: 3;
+}
+
+.ring-fill {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.4s linear, stroke 0.4s;
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+
+body.prep .ring-fill { stroke: var(--prep); filter: drop-shadow(0 0 6px var(--prep-glow)); }
+body.work .ring-fill { stroke: var(--work); filter: drop-shadow(0 0 6px var(--work-glow)); }
+body.rest .ring-fill { stroke: var(--rest); filter: drop-shadow(0 0 6px var(--rest-glow)); }
+
+#quote {
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: var(--text-dim);
+  margin-top: 1.5rem;
+  min-height: 1.2em;
+  transition: opacity 0.5s;
+  font-style: italic;
+}
 </style>
 </head>
 <body>
+<canvas id="particles"></canvas>
 <div class="container">
 <div id="phase">준비</div>
-<div id="timer">00:05</div>
+<div class="ring-wrapper">
+  <svg class="ring-svg" viewBox="0 0 240 240">
+    <circle class="ring-bg" cx="120" cy="120" r="110"/>
+    <circle class="ring-fill" id="ring" cx="120" cy="120" r="110"
+      stroke-dasharray="691.15" stroke-dashoffset="0"
+      transform="rotate(-90 120 120)"/>
+  </svg>
+  <div id="timer">00:05</div>
+</div>
 <div class="progress" id="progress"></div>
 <div id="set-info">1 / 10</div>
 <div class="settings" id="settings">
@@ -179,9 +241,83 @@ button:disabled { opacity: 0.3; cursor: default; transform: none; box-shadow: no
 <div class="buttons">
   <button id="start-btn" onclick="startTimer()">시작</button>
   <button id="reset-btn" onclick="resetTimer()">초기화</button>
+<div id="quote"></div>
 </div>
 </div>
 <script>
+// --- Particles ---
+const canvas = document.getElementById('particles');
+const ctx = canvas.getContext('2d');
+let particles = [];
+const PARTICLE_COUNT = 50;
+const phaseColors = {
+  '': [167,139,250], prep: [245,158,11], work: [167,139,250], rest: [52,211,153]
+};
+
+function resizeCanvas() { canvas.width = innerWidth; canvas.height = innerHeight; }
+addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    r: Math.random() * 2 + 0.5,
+    dx: (Math.random() - 0.5) * 0.3,
+    dy: (Math.random() - 0.5) * 0.3,
+    o: Math.random() * 0.3 + 0.05
+  });
+}
+
+function drawParticles() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const c = phaseColors[document.body.className] || phaseColors[''];
+  particles.forEach(p => {
+    p.x += p.dx; p.y += p.dy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${c[0]},${c[1]},${c[2]},${p.o})`;
+    ctx.fill();
+  });
+  requestAnimationFrame(drawParticles);
+}
+drawParticles();
+
+// --- Quotes ---
+const quotes = {
+  prep: ['집중할 준비를 하세요', '심호흡, 마음을 가다듬고', '이번 세트도 해낼 수 있어요', '자세를 바르게, 시선을 모아'],
+  work: ['지금 이 순간에 집중하세요', '꾸준함이 천재를 이긴다', '포기하지 마세요, 거의 다 왔어요', '몰입은 최고의 능력이다'],
+  rest: ['잘했어요, 잠시 쉬어가세요', '눈을 감고 깊게 숨을 쉬세요', '충분한 휴식도 실력이에요', '스트레칭을 해보는 건 어때요?']
+};
+let lastQuotePhase = '';
+
+function updateQuote(p) {
+  if (p === lastQuotePhase) return;
+  lastQuotePhase = p;
+  const el = document.getElementById('quote');
+  el.style.opacity = '0';
+  setTimeout(() => {
+    const list = quotes[p] || quotes.prep;
+    el.textContent = list[Math.floor(Math.random() * list.length)];
+    el.style.opacity = '1';
+  }, 300);
+}
+
+// --- Ring ---
+const CIRCUMFERENCE = 2 * Math.PI * 110;
+let phaseDuration = 0;
+
+function updateRing() {
+  if (!phaseDuration) return;
+  const progress = remaining / phaseDuration;
+  document.getElementById('ring').setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - progress));
+}
+
+// --- Timer ---
 let interval = null, remaining = 0, phase = 'prep', currentSet = 0, totalSets = 10, prepSec = 5, workSec = 15, restSec = 5;
 
 function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
@@ -207,14 +343,16 @@ function updateDisplay() {
   document.getElementById('phase').textContent = phaseLabel();
   document.getElementById('set-info').textContent = `${currentSet + 1} / ${totalSets}`;
   document.body.className = phase;
+  updateRing();
+  updateQuote(phase);
   renderDots();
 }
 
 function tick() {
   remaining--;
   if (remaining < 0) {
-    if (phase === 'prep') { phase = 'work'; remaining = workSec; }
-    else if (phase === 'work') { phase = 'rest'; remaining = restSec; }
+    if (phase === 'prep') { phase = 'work'; remaining = workSec; phaseDuration = workSec; }
+    else if (phase === 'work') { phase = 'rest'; remaining = restSec; phaseDuration = restSec; }
     else {
       currentSet++;
       if (currentSet >= totalSets) {
@@ -225,7 +363,7 @@ function tick() {
         renderDots();
         return;
       }
-      phase = 'prep'; remaining = prepSec;
+      phase = 'prep'; remaining = prepSec; phaseDuration = prepSec;
     }
   }
   updateDisplay();
@@ -237,7 +375,7 @@ function startTimer() {
   workSec = parseInt(document.getElementById('work-sec').value) || 50;
   restSec = parseInt(document.getElementById('rest-sec').value) || 10;
   totalSets = parseInt(document.getElementById('sets').value) || 10;
-  if (remaining === 0) { remaining = prepSec; phase = 'prep'; currentSet = 0; }
+  if (remaining === 0) { remaining = prepSec; phaseDuration = prepSec; phase = 'prep'; currentSet = 0; }
   document.getElementById('start-btn').disabled = true;
   document.getElementById('settings').style.display = 'none';
   updateDisplay();
@@ -257,6 +395,10 @@ function resetTimer() {
   document.getElementById('phase').textContent = '준비';
   document.getElementById('timer').textContent = fmt(prepSec);
   document.getElementById('set-info').textContent = `0 / ${totalSets}`;
+  document.getElementById('ring').setAttribute('stroke-dashoffset', '0');
+  phaseDuration = 0;
+  lastQuotePhase = '';
+  document.getElementById('quote').textContent = '';
   renderDots();
 }
 
