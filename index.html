@@ -6,39 +6,110 @@
 <title>Pomodoro Timer</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #1a1a2e; color: #eee; }
-.container { text-align: center; }
-h1 { font-size: 1.5rem; margin-bottom: 1rem; }
-#phase { font-size: 1.2rem; margin-bottom: 0.5rem; color: #e94560; }
-#timer { font-size: 5rem; font-weight: bold; margin: 1rem 0; }
-#set-info { font-size: 1rem; margin-bottom: 1.5rem; color: #aaa; }
-.settings { display: flex; gap: 1rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
-.settings label { font-size: 0.9rem; }
-.settings input { width: 70px; padding: 4px; text-align: center; border: 1px solid #555; border-radius: 4px; background: #16213e; color: #eee; }
-.buttons { display: flex; gap: 1rem; justify-content: center; }
-button { padding: 0.6rem 1.5rem; font-size: 1rem; border: none; border-radius: 6px; cursor: pointer; background: #e94560; color: #fff; }
-button:hover { background: #c73650; }
-button:disabled { opacity: 0.4; cursor: default; }
-#reset-btn { background: #555; }
-#reset-btn:hover { background: #777; }
-.rest #timer { color: #0f3460; }
-.work #timer { color: #e94560; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', sans-serif;
+  display: flex; justify-content: center; align-items: center;
+  min-height: 100vh;
+  background: #fafafa; color: #222;
+  transition: background 0.4s;
+}
+body.work { background: #fafafa; }
+body.rest { background: #f0f4f0; }
+
+.container {
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  padding: 2rem;
+}
+
+#phase {
+  font-size: 0.85rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: #999;
+  margin-bottom: 0.5rem;
+}
+
+#timer {
+  font-size: clamp(3.5rem, 15vw, 6rem);
+  font-weight: 200;
+  letter-spacing: 0.05em;
+  margin: 1rem 0;
+  color: #222;
+}
+
+#set-info {
+  font-size: 0.8rem;
+  color: #bbb;
+  margin-bottom: 2rem;
+}
+
+.progress {
+  display: flex; gap: 6px; justify-content: center;
+  margin-bottom: 2rem;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: #e0e0e0;
+  transition: background 0.3s;
+}
+.dot.done { background: #222; }
+.dot.active { background: #999; }
+
+.settings {
+  display: flex; flex-direction: column; gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.setting-row {
+  display: flex; justify-content: space-between; align-items: center;
+  width: 100%; max-width: 220px;
+}
+.setting-row span { font-size: 0.8rem; color: #999; }
+.setting-row input {
+  width: 60px; padding: 6px;
+  text-align: center;
+  border: 1px solid #ddd; border-radius: 4px;
+  background: #fff; color: #222;
+  font-size: 0.85rem;
+  outline: none;
+}
+.setting-row input:focus { border-color: #999; }
+
+.buttons { display: flex; gap: 0.75rem; justify-content: center; }
+button {
+  padding: 0.6rem 2rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: 1px solid #222;
+  border-radius: 2px;
+  cursor: pointer;
+  background: #222; color: #fff;
+  transition: all 0.2s;
+}
+button:hover { background: #444; border-color: #444; }
+button:disabled { opacity: 0.3; cursor: default; }
+#reset-btn { background: transparent; color: #222; }
+#reset-btn:hover { background: #f0f0f0; }
 </style>
 </head>
 <body>
 <div class="container">
-<h1>Pomodoro Timer</h1>
-<div class="settings" id="settings">
-<label>공부(초) <input type="number" id="work-sec" value="50" min="1"></label>
-<label>휴식(초) <input type="number" id="rest-sec" value="10" min="1"></label>
-<label>세트 수 <input type="number" id="sets" value="10" min="1"></label>
-</div>
 <div id="phase">준비</div>
 <div id="timer">00:50</div>
-<div id="set-info">0 / 10 세트 완료</div>
+<div class="progress" id="progress"></div>
+<div id="set-info">0 / 10</div>
+<div class="settings" id="settings">
+  <div class="setting-row"><span>공부 (초)</span><input type="number" id="work-sec" value="50" min="1"></div>
+  <div class="setting-row"><span>휴식 (초)</span><input type="number" id="rest-sec" value="10" min="1"></div>
+  <div class="setting-row"><span>세트</span><input type="number" id="sets" value="10" min="1"></div>
+</div>
 <div class="buttons">
-<button id="start-btn" onclick="startTimer()">시작</button>
-<button id="reset-btn" onclick="resetTimer()">초기화</button>
+  <button id="start-btn" onclick="startTimer()">시작</button>
+  <button id="reset-btn" onclick="resetTimer()">초기화</button>
 </div>
 </div>
 <script>
@@ -46,11 +117,22 @@ let interval = null, remaining = 0, isWork = true, currentSet = 0, totalSets = 1
 
 function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
 
+function renderDots() {
+  const p = document.getElementById('progress');
+  p.innerHTML = '';
+  for (let i = 0; i < totalSets; i++) {
+    const d = document.createElement('div');
+    d.className = 'dot' + (i < currentSet ? ' done' : (i === currentSet && interval ? ' active' : ''));
+    p.appendChild(d);
+  }
+}
+
 function updateDisplay() {
   document.getElementById('timer').textContent = fmt(remaining);
-  document.getElementById('phase').textContent = isWork ? `공부 중 (${currentSet+1}세트)` : `휴식 중 (${currentSet+1}세트)`;
-  document.getElementById('set-info').textContent = `${currentSet} / ${totalSets} 세트 완료`;
+  document.getElementById('phase').textContent = isWork ? `공부 — ${currentSet+1}세트` : `휴식 — ${currentSet+1}세트`;
+  document.getElementById('set-info').textContent = `${currentSet} / ${totalSets}`;
   document.body.className = isWork ? 'work' : 'rest';
+  renderDots();
 }
 
 function tick() {
@@ -58,7 +140,14 @@ function tick() {
   if (remaining < 0) {
     if (isWork) { isWork = false; remaining = restSec; currentSet++; }
     else {
-      if (currentSet >= totalSets) { clearInterval(interval); interval = null; document.getElementById('phase').textContent = '완료!'; document.getElementById('set-info').textContent = `${totalSets} / ${totalSets} 세트 완료`; document.getElementById('start-btn').disabled = false; return; }
+      if (currentSet >= totalSets) {
+        clearInterval(interval); interval = null;
+        document.getElementById('phase').textContent = '완료';
+        document.getElementById('set-info').textContent = `${totalSets} / ${totalSets}`;
+        document.getElementById('start-btn').disabled = false;
+        renderDots();
+        return;
+      }
       isWork = true; remaining = workSec;
     }
   }
@@ -87,8 +176,11 @@ function resetTimer() {
   document.getElementById('settings').style.display = 'flex';
   document.getElementById('phase').textContent = '준비';
   document.getElementById('timer').textContent = fmt(workSec);
-  document.getElementById('set-info').textContent = `0 / ${totalSets} 세트 완료`;
+  document.getElementById('set-info').textContent = `0 / ${totalSets}`;
+  renderDots();
 }
+
+renderDots();
 </script>
 </body>
 </html>
