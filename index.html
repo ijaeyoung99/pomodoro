@@ -13,6 +13,7 @@ body {
   background: #fafafa; color: #222;
   transition: background 0.4s;
 }
+body.prep { background: #fff3cd; }
 body.work { background: #fafafa; }
 body.rest { background: #d4edda; }
 
@@ -99,10 +100,11 @@ button:disabled { opacity: 0.3; cursor: default; }
 <body>
 <div class="container">
 <div id="phase">준비</div>
-<div id="timer">00:15</div>
+<div id="timer">00:05</div>
 <div class="progress" id="progress"></div>
 <div id="set-info">0 / 10</div>
 <div class="settings" id="settings">
+  <div class="setting-row"><span>준비 (초)</span><input type="number" id="prep-sec" value="5" min="1"></div>
   <div class="setting-row"><span>공부 (초)</span><input type="number" id="work-sec" value="15" min="1"></div>
   <div class="setting-row"><span>휴식 (초)</span><input type="number" id="rest-sec" value="5" min="1"></div>
   <div class="setting-row"><span>세트</span><input type="number" id="sets" value="10" min="1"></div>
@@ -113,7 +115,7 @@ button:disabled { opacity: 0.3; cursor: default; }
 </div>
 </div>
 <script>
-let interval = null, remaining = 0, isWork = true, currentSet = 0, totalSets = 10, workSec = 15, restSec = 5;
+let interval = null, remaining = 0, phase = 'prep', currentSet = 0, totalSets = 10, prepSec = 5, workSec = 15, restSec = 5;
 
 function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
 
@@ -127,18 +129,25 @@ function renderDots() {
   }
 }
 
+function phaseLabel() {
+  if (phase === 'prep') return `준비 — ${currentSet+1}세트`;
+  if (phase === 'work') return `공부 — ${currentSet+1}세트`;
+  return `휴식 — ${currentSet+1}세트`;
+}
+
 function updateDisplay() {
   document.getElementById('timer').textContent = fmt(remaining);
-  document.getElementById('phase').textContent = isWork ? `공부 — ${currentSet+1}세트` : `휴식 — ${currentSet+1}세트`;
+  document.getElementById('phase').textContent = phaseLabel();
   document.getElementById('set-info').textContent = `${currentSet} / ${totalSets}`;
-  document.body.className = isWork ? 'work' : 'rest';
+  document.body.className = phase;
   renderDots();
 }
 
 function tick() {
   remaining--;
   if (remaining < 0) {
-    if (isWork) { isWork = false; remaining = restSec; currentSet++; }
+    if (phase === 'prep') { phase = 'work'; remaining = workSec; }
+    else if (phase === 'work') { phase = 'rest'; remaining = restSec; currentSet++; }
     else {
       if (currentSet >= totalSets) {
         clearInterval(interval); interval = null;
@@ -148,7 +157,7 @@ function tick() {
         renderDots();
         return;
       }
-      isWork = true; remaining = workSec;
+      phase = 'prep'; remaining = prepSec;
     }
   }
   updateDisplay();
@@ -156,10 +165,11 @@ function tick() {
 
 function startTimer() {
   if (interval) return;
+  prepSec = parseInt(document.getElementById('prep-sec').value) || 5;
   workSec = parseInt(document.getElementById('work-sec').value) || 50;
   restSec = parseInt(document.getElementById('rest-sec').value) || 10;
   totalSets = parseInt(document.getElementById('sets').value) || 10;
-  if (remaining === 0) { remaining = workSec; isWork = true; currentSet = 0; }
+  if (remaining === 0) { remaining = prepSec; phase = 'prep'; currentSet = 0; }
   document.getElementById('start-btn').disabled = true;
   document.getElementById('settings').style.display = 'none';
   updateDisplay();
@@ -168,14 +178,15 @@ function startTimer() {
 
 function resetTimer() {
   clearInterval(interval); interval = null;
-  remaining = 0; isWork = true; currentSet = 0;
+  remaining = 0; phase = 'prep'; currentSet = 0;
+  prepSec = parseInt(document.getElementById('prep-sec').value) || 5;
   workSec = parseInt(document.getElementById('work-sec').value) || 50;
   restSec = parseInt(document.getElementById('rest-sec').value) || 10;
   totalSets = parseInt(document.getElementById('sets').value) || 10;
   document.getElementById('start-btn').disabled = false;
   document.getElementById('settings').style.display = 'flex';
   document.getElementById('phase').textContent = '준비';
-  document.getElementById('timer').textContent = fmt(workSec);
+  document.getElementById('timer').textContent = fmt(prepSec);
   document.getElementById('set-info').textContent = `0 / ${totalSets}`;
   renderDots();
 }
