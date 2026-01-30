@@ -38,6 +38,8 @@ body.work { background: #0d0b14; }
 body.rest { background: #08100d; }
 
 .container {
+  position: relative;
+  z-index: 1;
   text-align: center;
   width: 90%;
   max-width: 420px;
@@ -169,67 +171,28 @@ canvas#particles {
   z-index: 0;
 }
 
-.container {
-  position: relative;
-  z-index: 1;
-}
-
-.ring-wrapper {
-  position: relative;
-  display: inline-block;
-  margin: 0.5rem 0 0.2rem;
-}
-
-.ring-svg {
-  position: absolute;
-  top: 50%; left: 50%;
-  transform: translate(-50%, -50%);
-  width: 240px; height: 240px;
-}
-
-.ring-bg {
-  fill: none;
-  stroke: rgba(255,255,255,0.06);
-  stroke-width: 3;
-}
-
-.ring-fill {
-  fill: none;
-  stroke: var(--accent);
-  stroke-width: 3;
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.4s linear, stroke 0.4s;
-  filter: drop-shadow(0 0 6px var(--accent-glow));
-}
-
-body.prep .ring-fill { stroke: var(--prep); filter: drop-shadow(0 0 6px var(--prep-glow)); }
-body.work .ring-fill { stroke: var(--work); filter: drop-shadow(0 0 6px var(--work-glow)); }
-body.rest .ring-fill { stroke: var(--rest); filter: drop-shadow(0 0 6px var(--rest-glow)); }
-
 #quote {
-  font-size: 0.8rem;
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 0.85rem;
   font-weight: 400;
   color: var(--text-dim);
-  margin-top: 1.5rem;
-  min-height: 1.2em;
-  transition: opacity 0.5s;
+  transition: opacity 0.5s, top 0.3s;
   font-style: italic;
+  white-space: nowrap;
+  z-index: 2;
+  top: 2rem;
 }
+
 </style>
 </head>
 <body>
 <canvas id="particles"></canvas>
+<div id="quote"></div>
 <div class="container">
 <div id="phase">준비</div>
-<div class="ring-wrapper">
-  <svg class="ring-svg" viewBox="0 0 240 240">
-    <circle class="ring-bg" cx="120" cy="120" r="110"/>
-    <circle class="ring-fill" id="ring" cx="120" cy="120" r="110"
-      stroke-dasharray="691.15" stroke-dashoffset="0"
-      transform="rotate(-90 120 120)"/>
-  </svg>
-  <div id="timer">00:05</div>
-</div>
+<div id="timer">00:05</div>
 <div class="progress" id="progress"></div>
 <div id="set-info">1 / 10</div>
 <div class="settings" id="settings">
@@ -241,7 +204,6 @@ body.rest .ring-fill { stroke: var(--rest); filter: drop-shadow(0 0 6px var(--re
 <div class="buttons">
   <button id="start-btn" onclick="startTimer()">시작</button>
   <button id="reset-btn" onclick="resetTimer()">초기화</button>
-<div id="quote"></div>
 </div>
 </div>
 <script>
@@ -249,7 +211,7 @@ body.rest .ring-fill { stroke: var(--rest); filter: drop-shadow(0 0 6px var(--re
 const canvas = document.getElementById('particles');
 const ctx = canvas.getContext('2d');
 let particles = [];
-const PARTICLE_COUNT = 50;
+const PARTICLE_COUNT = 80;
 const phaseColors = {
   '': [167,139,250], prep: [245,158,11], work: [167,139,250], rest: [52,211,153]
 };
@@ -262,10 +224,10 @@ for (let i = 0; i < PARTICLE_COUNT; i++) {
   particles.push({
     x: Math.random() * canvas.width,
     y: Math.random() * canvas.height,
-    r: Math.random() * 2 + 0.5,
-    dx: (Math.random() - 0.5) * 0.3,
-    dy: (Math.random() - 0.5) * 0.3,
-    o: Math.random() * 0.3 + 0.05
+    r: Math.random() * 3 + 1,
+    dx: (Math.random() - 0.5) * 0.4,
+    dy: (Math.random() - 0.5) * 0.4,
+    o: Math.random() * 0.4 + 0.15
   });
 }
 
@@ -295,6 +257,11 @@ const quotes = {
 };
 let lastQuotePhase = '';
 
+function positionQuote() {
+  const containerTop = document.querySelector('.container').getBoundingClientRect().top;
+  document.getElementById('quote').style.top = (containerTop / 2) + 'px';
+}
+
 function updateQuote(p) {
   if (p === lastQuotePhase) return;
   lastQuotePhase = p;
@@ -304,18 +271,11 @@ function updateQuote(p) {
     const list = quotes[p] || quotes.prep;
     el.textContent = list[Math.floor(Math.random() * list.length)];
     el.style.opacity = '1';
+    positionQuote();
   }, 300);
 }
 
-// --- Ring ---
-const CIRCUMFERENCE = 2 * Math.PI * 110;
-let phaseDuration = 0;
-
-function updateRing() {
-  if (!phaseDuration) return;
-  const progress = remaining / phaseDuration;
-  document.getElementById('ring').setAttribute('stroke-dashoffset', CIRCUMFERENCE * (1 - progress));
-}
+addEventListener('resize', positionQuote);
 
 // --- Timer ---
 let interval = null, remaining = 0, phase = 'prep', currentSet = 0, totalSets = 10, prepSec = 5, workSec = 15, restSec = 5;
@@ -343,7 +303,6 @@ function updateDisplay() {
   document.getElementById('phase').textContent = phaseLabel();
   document.getElementById('set-info').textContent = `${currentSet + 1} / ${totalSets}`;
   document.body.className = phase;
-  updateRing();
   updateQuote(phase);
   renderDots();
 }
@@ -351,8 +310,8 @@ function updateDisplay() {
 function tick() {
   remaining--;
   if (remaining < 0) {
-    if (phase === 'prep') { phase = 'work'; remaining = workSec; phaseDuration = workSec; }
-    else if (phase === 'work') { phase = 'rest'; remaining = restSec; phaseDuration = restSec; }
+    if (phase === 'prep') { phase = 'work'; remaining = workSec; }
+    else if (phase === 'work') { phase = 'rest'; remaining = restSec; }
     else {
       currentSet++;
       if (currentSet >= totalSets) {
@@ -363,8 +322,7 @@ function tick() {
         renderDots();
         return;
       }
-      phase = 'prep'; remaining = prepSec; phaseDuration = prepSec;
-    }
+      phase = 'prep'; remaining = prepSec;    }
   }
   updateDisplay();
 }
@@ -375,7 +333,7 @@ function startTimer() {
   workSec = parseInt(document.getElementById('work-sec').value) || 50;
   restSec = parseInt(document.getElementById('rest-sec').value) || 10;
   totalSets = parseInt(document.getElementById('sets').value) || 10;
-  if (remaining === 0) { remaining = prepSec; phaseDuration = prepSec; phase = 'prep'; currentSet = 0; }
+  if (remaining === 0) { remaining = prepSec; phase = 'prep'; currentSet = 0; }
   document.getElementById('start-btn').disabled = true;
   document.getElementById('settings').style.display = 'none';
   updateDisplay();
@@ -395,8 +353,6 @@ function resetTimer() {
   document.getElementById('phase').textContent = '준비';
   document.getElementById('timer').textContent = fmt(prepSec);
   document.getElementById('set-info').textContent = `0 / ${totalSets}`;
-  document.getElementById('ring').setAttribute('stroke-dashoffset', '0');
-  phaseDuration = 0;
   lastQuotePhase = '';
   document.getElementById('quote').textContent = '';
   renderDots();
