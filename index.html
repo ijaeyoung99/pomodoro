@@ -14,7 +14,7 @@ body {
   transition: background 0.4s;
 }
 body.work { background: #fafafa; }
-body.rest { background: #f0f4f0; }
+body.rest { background: #d4edda; }
 
 .container {
   text-align: center;
@@ -99,12 +99,12 @@ button:disabled { opacity: 0.3; cursor: default; }
 <body>
 <div class="container">
 <div id="phase">준비</div>
-<div id="timer">00:50</div>
+<div id="timer">00:15</div>
 <div class="progress" id="progress"></div>
 <div id="set-info">0 / 10</div>
 <div class="settings" id="settings">
-  <div class="setting-row"><span>공부 (초)</span><input type="number" id="work-sec" value="50" min="1"></div>
-  <div class="setting-row"><span>휴식 (초)</span><input type="number" id="rest-sec" value="10" min="1"></div>
+  <div class="setting-row"><span>공부 (초)</span><input type="number" id="work-sec" value="15" min="1"></div>
+  <div class="setting-row"><span>휴식 (초)</span><input type="number" id="rest-sec" value="5" min="1"></div>
   <div class="setting-row"><span>세트</span><input type="number" id="sets" value="10" min="1"></div>
 </div>
 <div class="buttons">
@@ -113,7 +113,7 @@ button:disabled { opacity: 0.3; cursor: default; }
 </div>
 </div>
 <script>
-let interval = null, remaining = 0, isWork = true, currentSet = 0, totalSets = 10, workSec = 50, restSec = 10;
+let interval = null, remaining = 0, isWork = true, currentSet = 0, totalSets = 10, workSec = 15, restSec = 5;
 
 function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
 
