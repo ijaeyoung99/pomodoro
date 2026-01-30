@@ -147,8 +147,9 @@ function tick() {
   remaining--;
   if (remaining < 0) {
     if (phase === 'prep') { phase = 'work'; remaining = workSec; }
-    else if (phase === 'work') { phase = 'rest'; remaining = restSec; currentSet++; }
+    else if (phase === 'work') { phase = 'rest'; remaining = restSec; }
     else {
+      currentSet++;
       if (currentSet >= totalSets) {
         clearInterval(interval); interval = null;
         document.getElementById('phase').textContent = '완료';
@@ -185,6 +186,7 @@ function resetTimer() {
   totalSets = parseInt(document.getElementById('sets').value) || 10;
   document.getElementById('start-btn').disabled = false;
   document.getElementById('settings').style.display = 'flex';
+  document.body.className = '';
   document.getElementById('phase').textContent = '준비';
   document.getElementById('timer').textContent = fmt(prepSec);
   document.getElementById('set-info').textContent = `0 / ${totalSets}`;
