@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pomodoro Timer</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Segoe UI', sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #1a1a2e; color: #eee; }
+.container { text-align: center; }
+h1 { font-size: 1.5rem; margin-bottom: 1rem; }
+#phase { font-size: 1.2rem; margin-bottom: 0.5rem; color: #e94560; }
+#timer { font-size: 5rem; font-weight: bold; margin: 1rem 0; }
+#set-info { font-size: 1rem; margin-bottom: 1.5rem; color: #aaa; }
+.settings { display: flex; gap: 1rem; justify-content: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.settings label { font-size: 0.9rem; }
+.settings input { width: 70px; padding: 4px; text-align: center; border: 1px solid #555; border-radius: 4px; background: #16213e; color: #eee; }
+.buttons { display: flex; gap: 1rem; justify-content: center; }
+button { padding: 0.6rem 1.5rem; font-size: 1rem; border: none; border-radius: 6px; cursor: pointer; background: #e94560; color: #fff; }
+button:hover { background: #c73650; }
+button:disabled { opacity: 0.4; cursor: default; }
+#reset-btn { background: #555; }
+#reset-btn:hover { background: #777; }
+.rest #timer { color: #0f3460; }
+.work #timer { color: #e94560; }
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Pomodoro Timer</h1>
+<div class="settings" id="settings">
+<label>공부(초) <input type="number" id="work-sec" value="50" min="1"></label>
+<label>휴식(초) <input type="number" id="rest-sec" value="10" min="1"></label>
+<label>세트 수 <input type="number" id="sets" value="10" min="1"></label>
+</div>
+<div id="phase">준비</div>
+<div id="timer">00:50</div>
+<div id="set-info">0 / 10 세트 완료</div>
+<div class="buttons">
+<button id="start-btn" onclick="startTimer()">시작</button>
+<button id="reset-btn" onclick="resetTimer()">초기화</button>
+</div>
+</div>
+<script>
+let interval = null, remaining = 0, isWork = true, currentSet = 0, totalSets = 10, workSec = 50, restSec = 10;
+
+function fmt(s) { return String(Math.floor(s/60)).padStart(2,'0') + ':' + String(s%60).padStart(2,'0'); }
+
+function updateDisplay() {
+  document.getElementById('timer').textContent = fmt(remaining);
+  document.getElementById('phase').textContent = isWork ? `공부 중 (${currentSet+1}세트)` : `휴식 중 (${currentSet+1}세트)`;
+  document.getElementById('set-info').textContent = `${currentSet} / ${totalSets} 세트 완료`;
+  document.body.className = isWork ? 'work' : 'rest';
+}
+
+function tick() {
+  remaining--;
+  if (remaining < 0) {
+    if (isWork) { isWork = false; remaining = restSec; currentSet++; }
+    else {
+      if (currentSet >= totalSets) { clearInterval(interval); interval = null; document.getElementById('phase').textContent = '완료!'; document.getElementById('set-info').textContent = `${totalSets} / ${totalSets} 세트 완료`; document.getElementById('start-btn').disabled = false; return; }
+      isWork = true; remaining = workSec;
+    }
+  }
+  updateDisplay();
+}
+
+function startTimer() {
+  if (interval) return;
+  workSec = parseInt(document.getElementById('work-sec').value) || 50;
+  restSec = parseInt(document.getElementById('rest-sec').value) || 10;
+  totalSets = parseInt(document.getElementById('sets').value) || 10;
+  if (remaining === 0) { remaining = workSec; isWork = true; currentSet = 0; }
+  document.getElementById('start-btn').disabled = true;
+  document.getElementById('settings').style.display = 'none';
+  updateDisplay();
+  interval = setInterval(tick, 1000);
+}
+
+function resetTimer() {
+  clearInterval(interval); interval = null;
+  remaining = 0; isWork = true; currentSet = 0;
+  workSec = parseInt(document.getElementById('work-sec').value) || 50;
+  restSec = parseInt(document.getElementById('rest-sec').value) || 10;
+  totalSets = parseInt(document.getElementById('sets').value) || 10;
+  document.getElementById('start-btn').disabled = false;
+  document.getElementById('settings').style.display = 'flex';
+  document.getElementById('phase').textContent = '준비';
+  document.getElementById('timer').textContent = fmt(workSec);
+  document.getElementById('set-info').textContent = `0 / ${totalSets} 세트 완료`;
+}
+</script>
+</body>
+</html>
